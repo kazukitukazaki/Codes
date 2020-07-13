@@ -56,8 +56,7 @@ Patterned_PastData = PVset_Format_Change(dataTrainStandardized);
 %% Train model
 Feature =horzcat(2,predictor_ger-4);
 [days, ~] = size(Patterned_PastData);
-eva_k_pv = evalclusters(Patterned_PastData(:,9:104),'kmeans','Gap','Klist',[7:12],'ReferenceDistribution','uniform','SearchMethod','firstMaxSE');
-k_pv = eva_k_pv.OptimalK;
+k_pv = 2;
 if days <= 30
     [idx_PastData,c_PastData_pv] = kmeans(Patterned_PastData(:,9:104),k_pv); % Set index ans class value using k-means
     train_feature = Patterned_PastData(:,Feature);                       % feature
@@ -68,12 +67,11 @@ else
      for i_loop = 1:3
             %% Divide data train, valid
             % 100% : total
-        raw_100_PastData = Patterned_PastData;
-        [m_raw_100_PastData, ~] = size(raw_100_PastData);
+        [m_raw_100_PastData, ~] = size(Patterned_PastData);
         m_raw_70_PastData = m_raw_100_PastData-96+30;                                       % gyeong gak change value
             % 70% : train, 30% : validate 
-        raw_70_PastData = raw_100_PastData(1:m_raw_70_PastData,:);
-        raw_30_PastData = raw_100_PastData(m_raw_70_PastData+1:end,:);
+        raw_70_PastData = Patterned_PastData(1:m_raw_70_PastData,:);
+        raw_30_PastData = Patterned_PastData(m_raw_70_PastData+1:end,:);
             %% validation for selecting otimal k
         eva = evalclusters(raw_70_PastData(:,9:104),'kmeans','Gap','Klist',[5:15],'B',90,'ReferenceDistribution','uniform','SearchMethod','firstMaxSE');
         k=eva.OptimalK;
@@ -86,8 +84,6 @@ else
         nb_pv_array{k} = fitcnb(train_feature,train_label,'Distribution','kernel');        % Bayesian Classification
             %% vaild (to make err data)
         [m_raw_ForecastData, ~] = size(raw_30_PastData);
-        result_idx = zeros(m_raw_ForecastData,1);                            % set 0 matrix for reduce run time
-        result_cluster = zeros(m_raw_ForecastData,96);                       % set 0 matrix for reduce run time
         for i = 1:m_raw_ForecastData
              test_input(i,:) = raw_30_PastData(i,Feature);                    % feature
              result_idx(i,1) = nb_pv_array{k}.predict(test_input(i,:));       % Find generation's idex using Bayesian
