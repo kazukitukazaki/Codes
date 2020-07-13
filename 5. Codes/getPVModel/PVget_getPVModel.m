@@ -14,7 +14,6 @@
 % ----------------------------------------------------------------------------
 
 function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
-    f=waitbar(0,'PVget getPVModel Start','Name','PVget getPVModel');   
     tic;    
     %% parameters
     ci_percentage = 0.05; % 0.05 = 95% it must be between 0 and 1
@@ -52,16 +51,10 @@ function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
         load(matname);
     end    
     %% Prediction for test data   
-    waitbar(.1,f,'PVget kmeans Forecast');
-    predicted_PV(1).data = PVget_kmeans_Forecast(predictors, short_past_load, filepath);
-    
-    waitbar(.25,f,'PVget ANN Forecast');
-    predicted_PV(2).data = PVget_ANN_Forecast(predictors, short_past_load, filepath);
-    
-    waitbar(.40,f,' PVget LSTM Forecast');
+    predicted_PV(1).data = PVget_kmeans_Forecast(predictors, short_past_load, filepath);   
+    predicted_PV(2).data = PVget_ANN_Forecast(predictors, short_past_load, filepath);   
     predicted_PV(3).data = PVget_LSTM_Forecast(predictors,short_past_load, filepath);   
     %% Get Deterministic prediction result   
-    waitbar(.55,f,'waiting');    
     for hour = 1:24
         for i = 1:size(coeff(1).data,1) % the number of prediction methods(k-means, ANN and LSTM)
             if i == 1
@@ -107,7 +100,6 @@ function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
     fclose(fid);
     % for debugging --------------------------------------------------------
     %% Display graph  
-    waitbar(.70,f,'Display graph'); 
     % make x timestep
     timestep=csvread(ForecastData,1,4,[1,4,96,5]);
     xtime=timestep(:,1)+0.25*timestep(:,2);
@@ -179,6 +171,4 @@ function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
    % for debugging ---------------------------------------------------------------------  
     flag = 1;
     toc; 
-    waitbar(1,f,'finish');
-    close(f)
 end
