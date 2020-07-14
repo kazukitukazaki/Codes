@@ -1,10 +1,8 @@
 function [out,varargout]=PVset_normmat(x,newminmax,flag)
 % normmat.m
 % takes a matrix and reformats the data to fit between a new range
-% 
 % Usage:
 %    [xprime,mins,maxs]=normmat(x,range,method)
-%
 % Inputs:
 %     x - matrix to reformat of dimension MxN
 %     range - a vector or matrix specifying minimum and maximum values for the new matrix
@@ -30,14 +28,12 @@ function [out,varargout]=PVset_normmat(x,newminmax,flag)
 %
 % example: x = [-10,3,0;2,4.1,-7;3.4,1,0.01]
 %          [xprime,mins,maxs]=normmat(x,[0,10],0)
-
 % Brian Birge
 % Rev 2.1
 % 3/16/06 - changed name of function to avoid same name in robust control
 % toolbox
 %--------------------------------------------------------------------------------------------------------
 if flag==0
-
   a=min(min((x)));
   b=max(max((x)));
   if abs(a)>abs(b)
@@ -59,8 +55,6 @@ if flag==0
      z21=(x-a)/(den);  
      out=z21*range+newminmax(1)*ones(size(z21));
   end
-  
-%--------------------------------------------------------------------------------------------------------  
 elseif flag==1
  a=min(x,[],1);
  b=max(x,[],1);
@@ -82,8 +76,7 @@ elseif flag==1
      error('Error: for method=1, range matrix must have 2 rows and same columns as input matrix');
   else
      newminmaxA=newminmax;
-  end
-  
+  end  
   range=newminmaxA(2,:)-newminmaxA(1,:);  
   for j=1:length(x(:,1))    
      for i=1:length(b)
@@ -95,7 +88,6 @@ elseif flag==1
         end
      end     
   end  
-%--------------------------------------------------------------------------------------------------------  
 elseif flag==2
   a=min(x,[],2);
   b=max(x,[],2);
@@ -117,8 +109,7 @@ elseif flag==2
      error('Error: for method=2, range matrix must have 2 columns and same rows as input matrix');
   else
      newminmaxA=newminmax;
-  end
-  
+  end  
   range=newminmaxA(:,2)-newminmaxA(:,1);  
   for j=1:length(x(1,:))
      for i=1:length(b)
@@ -129,11 +120,8 @@ elseif flag==2
            out(i,j)=z21(i,j).*range(i,1)+newminmaxA(i,1);
         end
      end     
-  end  
-  
+  end   
 end
-%--------------------------------------------------------------------------------------------------------
 varargout{1}=a;
 varargout{2}=b;
-
 return
