@@ -1,18 +1,9 @@
-% ---------------------------------------------------------------------------
 % Load prediction: Foecasting algorithm 
-% 2019/01/15 Updated Daisuke Kodaira 
-% daisuke.kodaira03@gmail.com
-%
-% 2019/10/15 Modified  GyeongGak Kim
-% kakkyoung2@gmail.com
-
 % function flag = demandForecast(shortTermPastData, ForecastData, ResultData)
 %     flag =1 ; if operation is completed successfully
 %     flag = -1; if operation fails.
 %     This function depends on demandModel.mat. If these files are not found return -1.
 %     The output of the function is "ResultData.csv"
-% ----------------------------------------------------------------------------
-
 function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
     tic;    
     %% parameters
@@ -55,16 +46,16 @@ function flag = PVget_getPVModel(shortTermPastData, ForecastData, ResultData)
     predicted_PV(2).data = PVget_ANN_Forecast(predictors, short_past_load, filepath);   
     predicted_PV(3).data = PVget_LSTM_Forecast(predictors,short_past_load, filepath);   
     %% Get Deterministic prediction result   
+    [~,numCols]=size(coeff(1,:));
     for hour = 1:24
-        for i = 1:size(coeff(1).data,1) % the number of prediction methods(k-means, ANN and LSTM)
+        for i = 1:numCols % the number of prediction methods(k-means, ANN and LSTM)
             if i == 1
-                yDetermPred(1+(hour-1)*4:hour*4,:) = coeff(hour).data(i).*predicted_PV(i).data(1+(hour-1)*4:hour*4);
+                yDetermPred(1+(hour-1)*4:hour*4,:) = coeff(hour,i).*predicted_PV(i).data(1+(hour-1)*4:hour*4);
             else
-                yDetermPred(1+(hour-1)*4:hour*4,:) = yDetermPred(1+(hour-1)*4:hour*4,:) + coeff(hour).data(i).*predicted_PV(i).data(1+(hour-1)*4:hour*4);  
+                yDetermPred(1+(hour-1)*4:hour*4,:) = yDetermPred(1+(hour-1)*4:hour*4,:) + coeff(hour,i).*predicted_PV(i).data(1+(hour-1)*4:hour*4);  
             end
         end 
-    end    
-    
+    end      
     %% Generate Result file    
     % Headers for output file
     hedder = {'BuildingIndex', 'Year', 'Month', 'Day', 'Hour', 'Quarter', 'DemandMean', 'CIMin', 'CIMax', 'CILevel', 'pmfStartIndx', 'pmfStep', ...
