@@ -1,8 +1,4 @@
-% ---------------------------------------------------------------------------
 % PV prediction: Model development algorithm 
-% 2019/02/18 Updated gyeong gak (kakkyoung2@gmail.com)
-% 2019/06/16 Updated by Daisuke Kodaira (daisuke.kodaira03@gmail.com)
-% ----------------------------------------------------------------------------
 function flag = PVset_setPVModel(LongTermPastData)
     f = waitbar(0,'PVset_setPVModel Start','Name','PVset_setPVMode');
     start_all = tic;    
@@ -12,9 +8,9 @@ function flag = PVset_setPVModel(LongTermPastData)
     ValidDays = 30; % it must be above 1 day. 3days might provide the best performance
     n_valid_data = 96*ValidDays; % 24*4*day
     %% Load data
-    if strcmp(LongTermPastData, 'NULL') == 0    % if the filename is not null
+    if strcmp(LongTermPastData,'NULL') == 0    % if the filename is not null
         longPast = readmatrix(LongTermPastData);
-        longPast = longPast([2:end],:);
+        longPast = longPast(2:end,:);
     else  % if the fine name is null
         flag = -1; 
         return
@@ -25,17 +21,14 @@ function flag = PVset_setPVModel(LongTermPastData)
     valid_predictors = longPast(end-n_valid_data+1:end, 1:end-1);
     %% Train each model using past load data
     waitbar(.1,f,'Training kmeans');
-    PVset_kmeans_Train(longPast, path);
-    
+    PVset_kmeans_Train(longPast, path);   
     waitbar(.25,f,'Training ANN');
-    PVset_ANN_Train(longPast, path);
-    
+    PVset_ANN_Train(longPast, path);   
     waitbar(.4,f,'Training LSTM');    
     PVset_LSTM_train(longPast, path);
     %% Validate the performance of each model
     waitbar(.55,f,'Forecasting');
-    g=waitbar(0,'PVset Forecasting(forLoop)','Name','PVset Forecasting(forLoop)');
-    
+    g=waitbar(0,'PVset Forecasting(forLoop)','Name','PVset Forecasting(forLoop)');   
     for day = 1:ValidDays 
         waitbar(day/ValidDays,g,'PVset Forecasting(forLoop)');
         TimeIndex = size(train_data,1)+1+96*(day-1);  % Indicator of the time instance for validation data in past_load, 
@@ -49,15 +42,14 @@ function flag = PVset_setPVModel(LongTermPastData)
     %% Optimize the coefficients for the additive model
     coeff = PVset_pso_main(y_ValidEstIndv, valid_data(:,end));
     %% Integrate individual forecasting algorithms
-    % 1. k-means byacian 
-    % 2. Neural network
     % integrate into one ensemble forecasting model with optimal coefficients
+    [~,numCols]=size(coeff(1,:));
     for hour = 1:24
-        for i = 1:size(coeff(1).data,1)
+        for i = 1:numCols
             if i == 1
-                y_est(1+(hour-1)*4:hour*4,:) = coeff(hour).data(i).*y_ValidEstIndv(i).data(1+(hour-1)*4:hour*4,:);
+                y_est(1+(hour-1)*4:hour*4,:) = coeff(hour,i).*y_ValidEstIndv(i).data(1+(hour-1)*4:hour*4,:);
             else
-                y_est(1+(hour-1)*4:hour*4,:) = y_est(1+(hour-1)*4:hour*4,:) + coeff(hour).data(i).*y_ValidEstIndv(i).data(1+(hour-1)*4:hour*4,:);  
+                y_est(1+(hour-1)*4:hour*4,:) = y_est(1+(hour-1)*4:hour*4,:) + coeff(hour,i).*y_ValidEstIndv(i).data(1+(hour-1)*4:hour*4,:);  
             end
         end
     end       
@@ -66,7 +58,7 @@ function flag = PVset_setPVModel(LongTermPastData)
         y_ValidEstComb(1+(day-1)*96:day*96, 1) = y_est(:, day);
     end
     % error from validation data[%] error[%], hours, Quaters    
-    err = [y_ValidEstComb - valid_data(:, end) valid_predictors(:,5) valid_predictors(:,6)];  
+    err = [y_ValidEstComb - valid_data(:,end) valid_predictors(:,5) valid_predictors(:,6)];  
     % Initialize the structure for error distribution
     % structure of err_distribution.data is as below:
     % row=25hours(0~24 in "LongTermPastData"), columns=4quarters.
@@ -93,9 +85,8 @@ function flag = PVset_setPVModel(LongTermPastData)
     name(2).string = strcat(s2,s3);
     varX(1).value = 'coeff';
     varX(2).value = 'err_distribution';
-    extention='.mat';
     for i = 1:size(varX,2)
-        matname = fullfile(path, [name(i).string extention]);
+        matname = fullfile(path,[name(i).string '.mat']);
         save(matname, varX(i).value);
     end        
     flag = 1;    % Return 1 when the operation properly works
