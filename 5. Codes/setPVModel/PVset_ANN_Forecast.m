@@ -1,7 +1,4 @@
-% Seung Hyeon made this code first 
-% 2019/10/15 modified by Gyeonggak Kim (kakkyoung2@gmail.com)
-% fix error & change predictor   
-function target = PVset_ANN_Forecast(predictors,shortTermPastData,path) 
+function target = PVset_ANN_Forecast(predictors,~,path) 
     start_ANN_Forecast = tic;
     %% load .mat file
     building_num = num2str(predictors(2,1));

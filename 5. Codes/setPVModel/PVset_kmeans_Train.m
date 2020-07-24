@@ -1,22 +1,16 @@
 function PVset_kmeans_Train(LongTermpastData, path)
 start_kmeans_Train = tic;
-% PV prediction: Model development algorithm made by Seung Hyeon  
-% 2019/06/25 Updated by gyeong gak (kakkyoung2@gmail.com)
-% The code has been modified to match the PV forecast
-% 2019/10/15 updated by gyeong gak (kakkyoung2@gmail.com)
-% Add Data standardization & Forecast sunlight & chage predictor 
 %% Load data
 Past_Load_dataData = LongTermpastData; % PastData load
 [m_new_format_PastData, ~]= size(Past_Load_dataData);
-%% Standardization
-% The k-means clusters data using Euclidean distance. so We have to equalize the distance between the data.
-% Data such as time, irradiation, etc. have high variance. so i standardize
-mean_value = mean(Past_Load_dataData(:,7:12));
-sig_value = std(Past_Load_dataData(:,7:12));
-dataTrainStandardized = (Past_Load_dataData(:,7:12) - mean_value) ./ sig_value;
-dataTrainStandardized = horzcat(Past_Load_dataData(:,1:6),dataTrainStandardized,Past_Load_dataData(:,13)); 
+%% normalize
+% Data such as time, irradiation, etc. have high variance. so i normalize
+max_value = max(Past_Load_dataData(:,7:12));
+min_value = min(Past_Load_dataData(:,7:12));
+dataTrainnormalize = (Past_Load_dataData(:,7:12) - min_value) ./ (max_value - min_value);
+dataTrainnormalize = horzcat(Past_Load_dataData(:,1:6),dataTrainnormalize,Past_Load_dataData(:,13)); 
 %% Correlation coefficient
-predata=dataTrainStandardized;
+predata=dataTrainnormalize;
 predata( ~any(predata(:,13),2), : ) = []; 
 R=corrcoef(predata(:,1:13));
 k=1;m=1;
@@ -31,8 +25,8 @@ for i=1:size(R,1)
     end
 end
 %% Kmeans clustering for forecast sunlight data
-past_feature_sunlight = horzcat(dataTrainStandardized(:,[3 5]), dataTrainStandardized(:,predictor_sun)); % combine 1~5 columns & 9,10 columns
-past_load_sunlight = dataTrainStandardized(:,12);
+past_feature_sunlight = horzcat(dataTrainnormalize(:,[3 5]), dataTrainnormalize(:,predictor_sun)); % combine 1~5 columns & 9,10 columns
+past_load_sunlight = dataTrainnormalize(:,12);
 % Set K for sunlight. 20 is experimentally chosen by gyeong gak. 
 % originally this value is 50
 k_sunlight = 30;
@@ -40,19 +34,19 @@ k_sunlight = 30;
 nb_sunlight = fitcnb(past_feature_sunlight, idx_sunlight,'Distribution','kernel'); % Bayesian Classification 
 %% If there is no 1 day past data, Make clone data
 if m_new_format_PastData < 96
-    dataTrainStandardized(1:96,[1,3,4]) = dataTrainStandardized(1,[1,3,4]); % building ID
-    dataTrainStandardized(1:96,5) = transpose([0 0 0 1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 6 7 7 7 7 8 8 8 8 9 9 9 9 10 10 10 10 ...
+    dataTrainnormalize(1:96,[1,3,4]) = dataTrainnormalize(1,[1,3,4]); % building ID
+    dataTrainnormalize(1:96,5) = transpose([0 0 0 1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 6 7 7 7 7 8 8 8 8 9 9 9 9 10 10 10 10 ...
         11 11 11 11 12 12 12 12 13 13 13 13 14 14 14 14 15 15 15 15 16 16 16 16 17 17 17 17 18 18 18 18 ...
         19 19 19 19 20 20 20 20 21 21 21 21 22 22 22 22 23 23 23 23 0]);
-    dataTrainStandardized(1:96,6) = transpose([1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 ...
+    dataTrainnormalize(1:96,6) = transpose([1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 ...
         1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0 1 2 3 0]);
-    dataTrainStandardized(1:96,7:12) = dataTrainStandardized(1,7:12);
-    dataTrainStandardized(1:96,13) = mean(dataTrainStandardized(1:m_new_format_PastData,13)); % demand
+    dataTrainnormalize(1:96,7:12) = dataTrainnormalize(1,7:12);
+    dataTrainnormalize(1:96,13) = mean(dataTrainnormalize(1:m_new_format_PastData,13)); % demand
 end
 %% Patterning data
 % 1:Building index , 2:Date, 3:Day of Week,  4:Holiday,  5:Temparature,
 %  6:Cloud, 7:Rain 8:SolarIrradiance,  9~104:Generation
-Patterned_PastData = PVset_Format_Change(dataTrainStandardized);
+Patterned_PastData = PVset_Format_Change(dataTrainnormalize);
 %% Train model
 Feature =horzcat(2,predictor_ger-4);
 [days, ~] = size(Patterned_PastData);
@@ -63,8 +57,6 @@ if days <= 30
     train_label = idx_PastData(:,1);                                     % class index
     nb_pv = fitcnb(train_feature,train_label,'Distribution','kernel');       % Bayesian Classification
 else
-        %% validation for selecting otimal k
-     for i_loop = 1:3
             %% Divide data train, valid
             % 100% : total
         [m_raw_100_PastData, ~] = size(Patterned_PastData);
@@ -73,6 +65,7 @@ else
         raw_70_PastData = Patterned_PastData(1:m_raw_70_PastData,:);
         raw_30_PastData = Patterned_PastData(m_raw_70_PastData+1:end,:);
             %% validation for selecting otimal k
+     for i_loop = 1:3
         eva = evalclusters(raw_70_PastData(:,9:104),'kmeans','Gap','Klist',[5:15],'B',90,'ReferenceDistribution','uniform','SearchMethod','firstMaxSE');
         k=eva.OptimalK;
             %% k-means past train data
@@ -108,10 +101,10 @@ save_name = '\PV_Model_';
 save_name = strcat(path,save_name,building_num,'.mat');
 if (days) < 31
     save(save_name,'nb_pv','c_PastData_pv','idx_PastData','Feature','nb_sunlight',...
-        'c_sunlight','idx_sunlight','sig_value','mean_value','predictor_sun');
+        'c_sunlight','idx_sunlight','max_value','min_value','predictor_sun');
 else
     save(save_name,'nb_pv_loop','c_PastData_pv_loop','idx_PastData_loop','Feature','nb_sunlight',...
-        'c_sunlight','idx_sunlight','sig_value','mean_value','predictor_sun');
+        'c_sunlight','idx_sunlight','max_value','min_value','predictor_sun');
 end
 end_kmeans_Train = toc(start_kmeans_Train)
 end

@@ -1,7 +1,6 @@
 function PVset_LSTM_train(input,path)
 start_LSTM_train = tic;
 % PV prediction: LSTM Model Forecast algorithm
-% 2019/10/15 Updated gyeong gak (kakkyoung2@gmail.com)
 %% LOAD DATA
 traindays=7;
 %% devide data (train,vaild)
@@ -11,7 +10,7 @@ sigdata = std(predata);
 if sigdata(11)==0 % in case of rain, its valus is usually 0. so it make NAN value
     sigdata(11)=1;
 end
-dataTrainStandardized = (predata - meandata) ./ sigdata; %Standardized
+dataTrainStandardized = (predata - meandata) ./ sigdata;
 dataTrainStandardized(:,5)=dataTrainStandardized(:,5)+dataTrainStandardized(:,6)*0.25;
 predata( ~any(predata(:,13),2), : ) = []; 
 R=corrcoef(predata(:,:));
@@ -39,7 +38,9 @@ layers = [ ...
     sequenceInputLayer(numFeatures)
     reluLayer
     lstmLayer(numHiddenUnits1)   
+    reluLayer
     lstmLayer(numHiddenUnits2)    
+    reluLayer
     fullyConnectedLayer(numResponses)
     regressionLayer];
 options = trainingOptions('adam', ...
@@ -61,13 +62,15 @@ layers = [ ...
     sequenceInputLayer(numFeatures)
     reluLayer
     lstmLayer(numHiddenUnits1)
+    reluLayer
     lstmLayer(numHiddenUnits2)
+    reluLayer
     fullyConnectedLayer(numResponses)
     regressionLayer];
 pv_net = trainNetwork(XTrain2,YTrain2,layers,options);
     %% save result mat file
     clearvars input;
-    clearvars shortTermPastData dataTrainStandardized 
+    clearvars shortTermPastData dataTrainnormalize
     building_num = num2str(predata(2,1));
     save_name = '\PV_LSTM_';
     save_name = strcat(path,save_name,building_num,'.mat');

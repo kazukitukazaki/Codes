@@ -1,10 +1,7 @@
 function target = PVset_ANN_Train(LongTermpastData,path)
 start_ANN_Train = tic;
-% Seung Hyeon made this code first 
-% 2019/10/15 modified by Gyeonggak Kim (kakkyoung2@gmail.com)
-% fix error & change predictor   
 %% PastData
-PastData_ANN = LongTermpastData(1:(end-96*7),:);    % PastData load
+PastData_ANN = LongTermpastData(1:(end-96*7),:); % PastData load
 PastData_ANN(~any(PastData_ANN(:,13),2),:) = [];    % if there is 0 value in generation column -> delete
 [m_PastData_ANN, ~] = size(PastData_ANN);  
 %% set featur
